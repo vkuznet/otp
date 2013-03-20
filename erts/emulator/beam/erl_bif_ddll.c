@@ -53,6 +53,9 @@
 #define DDLL_SMP 0
 #endif
 
+#ifndef RTLD_GLOBAL
+#define RTLD_GLOBAL	0x00100
+#endif
 
 /*
  * Local types
