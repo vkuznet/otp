@@ -58,7 +58,7 @@ void erl_sys_ddll_init(void) {
 /* 
  * Open a shared object
  */
-int erts_sys_ddll_open2(const char *full_name, void **handle, ErtsSysDdllError* err)
+int erts_sys_ddll_open2(const char *full_name, int flags, void **handle, ErtsSysDdllError* err)
 {
     int len;
     char dlname[MAXPATHLEN + 1];

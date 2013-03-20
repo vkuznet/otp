@@ -29,17 +29,6 @@
 #include "sys.h"
 #include "erl_vm.h"
 #include "global.h"
-#ifdef HAVE_DLFCN_H
-#include <dlfcn.h>
-#endif
-
-
-/* some systems do not have RTLD_NOW defined, and require the "mode"
- * argument to dload() always be 1.
- */
-#ifndef RTLD_NOW
-#  define RTLD_NOW 1
-#endif
 
 #define MAX_NAME_LEN 255      /* XXX should we get the system path size? */
 #define EXT_LEN      3
@@ -101,7 +90,7 @@ void erl_sys_ddll_init(void) {
 /* 
  * Open a shared object
  */
-int erts_sys_ddll_open2(const char *full_name, void **handle, ErtsSysDdllError* err)
+int erts_sys_ddll_open2(const char *full_name, int flags, void **handle, ErtsSysDdllError* err)
 {
 #if defined(HAVE_DLOPEN)
     char* dlname; 
@@ -112,7 +101,7 @@ int erts_sys_ddll_open2(const char *full_name, void **handle, ErtsSysDdllError* 
     sys_strcpy(dlname, full_name);
     sys_strcpy(dlname+len, FILE_EXT);
     
-    ret = erts_sys_ddll_open_noext(dlname, handle, err);
+    ret = erts_sys_ddll_open_noext(dlname, flags, handle, err);
 
     erts_free(ERTS_ALC_T_TMP, (void *) dlname);
     return ret;
@@ -121,12 +110,12 @@ int erts_sys_ddll_open2(const char *full_name, void **handle, ErtsSysDdllError* 
 #endif
 }
 
-int erts_sys_ddll_open_noext(char *dlname, void **handle, ErtsSysDdllError* err)
+int erts_sys_ddll_open_noext(char *dlname, int flags, void **handle, ErtsSysDdllError* err)
 {
     int ret = ERL_DE_NO_ERROR;
     char *str;
     dlerror();
-    if ((*handle = dlopen(dlname, RTLD_NOW)) == NULL) {
+    if ((*handle = dlopen(dlname, flags)) == NULL) {
 	str = dlerror();
 
 	if (err == NULL) {
