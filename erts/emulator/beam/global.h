@@ -78,8 +78,9 @@ extern void erl_nif_init(void);
 
 /* Flags for drivers, put locking policy here /PaN */
 #define ERL_DE_FL_KILL_PORTS 1
+#define ERL_DE_FL_RTLD_GLOBAL 2
 
-#define ERL_FL_CONSISTENT_MASK ( ERL_DE_FL_KILL_PORTS )
+#define ERL_FL_CONSISTENT_MASK ( ERL_DE_FL_KILL_PORTS | ERL_DE_FL_RTLD_GLOBAL )
 
 /* System specific load errors are returned as positive values */
 #define ERL_DE_NO_ERROR 0

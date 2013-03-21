@@ -248,8 +248,8 @@
           <item>
             <p>Return a list of the driver options provided when
               loading, as well as any options set by the driver itself
-              during initialization. The currently only valid option
-              being <c>kill_ports</c>.</p>
+              during initialization. The currently only valid options
+              are <c>kill_ports</c> and <c>global</c>.</p>
           </item>
           <tag><em>port_count</em></tag>
           <item>
@@ -692,13 +692,16 @@
                 <p>The driver options for a given driver name need
                   always to be consistent, <em>even when the driver is reloaded</em>, meaning that they are as much a part
                   of the driver as the actual name.</p>
-                <p>Currently the only allowed driver option is
+                <p>Currently the only allowed driver options are
                   <c>kill_ports</c>, which means that all ports opened
                   towards the driver are killed with the exit-reason
                   <c>driver_unloaded</c> when no process any longer
-                  has the driver loaded. This situation arises either
+                  has the driver loaded.
+                  This situation arises either
                   when the last <seealso marker="#users">user</seealso> calls <seealso marker="#try_unload/2">try_unload/2</seealso>, or
-                  the last process having loaded the driver exits.</p>
+                  the last process having loaded the driver exits;
+                  and <c>global</c>, which will set the RTLD_GLOBAL flag
+                  when calling dlopen().</p>
               </item>
               <tag><em>{monitor, <anno>MonitorOption</anno>}</em></tag>
               <item>

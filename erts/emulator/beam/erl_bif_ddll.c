@@ -53,6 +53,9 @@
 #define DDLL_SMP 0
 #endif
 
+#ifndef RTLD_GLOBAL
+#define RTLD_GLOBAL	0x00100
+#endif
 
 /*
  * Local types
@@ -74,7 +77,7 @@ static Eterm mkatom(char *str);
 static void add_proc_loaded(DE_Handle *dh, Process *proc); 
 static void add_proc_loaded_deref(DE_Handle *dh, Process *proc);
 static void set_driver_reloading(DE_Handle *dh, Process *proc, char *path, char *name, Uint flags);
-static int load_driver_entry(DE_Handle **dhp, char *path, char *name);
+static int load_driver_entry(DE_Handle **dhp, char *path, char *name, int flags);
 static int do_unload_driver_entry(DE_Handle *dh, Eterm *save_name);
 static int do_load_driver_entry(DE_Handle *dh, char *path, char *name);
 #if 0
@@ -157,7 +160,7 @@ kill_ports_driver_unloaded(DE_Handle *dh)
  *                {monitor,MonitorOption} | 
  *                {reload, ReloadOption}
  *	 DriverOptionList = [ DriverOption ]
- *	 DriverOption = kill_ports
+ *	 DriverOption = kill_ports | global
  *	 MonitorOption = pending_driver | pending
  *	 ReloadOption = pending_driver | pending
  *	 Status = loaded | already_loaded | PendingStatus
@@ -217,6 +220,8 @@ BIF_RETTYPE erl_ddll_try_load_3(BIF_ALIST_3)
 		    Eterm dopt = CAR(list_val(ll));
 		    if (dopt == am_kill_ports) {
 			flags |= ERL_DE_FL_KILL_PORTS;
+		    } else if (dopt == am_global) {
+			flags |= ERL_DE_FL_RTLD_GLOBAL;
 		    } else {
 			goto error;
 		    }
@@ -376,7 +381,7 @@ BIF_RETTYPE erl_ddll_try_load_3(BIF_ALIST_3)
 	    soft_error_term = am_not_loaded;
 	    goto soft_error;
 	} 
-	if ((res = load_driver_entry(&dh, path, name)) !=  ERL_DE_NO_ERROR) {
+	if ((res = load_driver_entry(&dh, path, name, flags)) !=  ERL_DE_NO_ERROR) {
 	    build_this_load_error = res;
 	    do_build_load_error = 1;
 	    soft_error_term = am_undefined;
@@ -756,13 +761,16 @@ BIF_RETTYPE erl_ddll_info_2(BIF_ALIST_2)
 	    res = am_linked_in_driver;
 	} else {
 	    Uint start_flags = drv->handle->flags & ERL_FL_CONSISTENT_MASK;
-	    /* Cheating, only one flag for now... */
+	    res = NIL;
 	    if (start_flags & ERL_DE_FL_KILL_PORTS) {
 		Eterm *myhp;
 		myhp = HAlloc(p,2);
-		res = CONS(myhp,am_kill_ports,NIL);
-	    } else {
-		res = NIL;
+		res = CONS(myhp,am_kill_ports,res);
+	    }
+	    if (start_flags & ERL_DE_FL_RTLD_GLOBAL) {
+		Eterm *myhp;
+		myhp = HAlloc(p,2);
+		res = CONS(myhp,am_global,res);
 	    }
 	}
 	goto done;
@@ -1521,10 +1529,14 @@ static int do_load_driver_entry(DE_Handle *dh, char *path, char *name)
     void *init_handle;
     int res;
     ErlDrvEntry *dp;
+    int flags = RTLD_NOW;
 
     assert_drv_list_rwlocked();
 
-    if ((res =  erts_sys_ddll_open(path, &(dh->handle))) != ERL_DE_NO_ERROR) {
+    if (dh->flags & ERL_DE_FL_RTLD_GLOBAL)
+	flags |= RTLD_GLOBAL;
+
+    if ((res =  erts_sys_ddll_open(path, flags, &(dh->handle))) != ERL_DE_NO_ERROR) {
 	return res;
     }
     
@@ -1621,7 +1633,7 @@ static int do_unload_driver_entry(DE_Handle *dh, Eterm *save_name)
     return 0;
 }
 
-static int load_driver_entry(DE_Handle **dhp, char *path, char *name)
+static int load_driver_entry(DE_Handle **dhp, char *path, char *name, int flags)
 {
     int res;
     DE_Handle *dh = erts_alloc(ERTS_ALC_T_DDLL_HANDLE, sizeof(DE_Handle));
@@ -1637,7 +1649,7 @@ static int load_driver_entry(DE_Handle **dhp, char *path, char *name)
     dh->reload_driver_name = NULL;
     dh->reload_flags = 0;
     dh->full_path = NULL;
-    dh->flags = 0;
+    dh->flags = flags;
 
     if ((res = do_load_driver_entry(dh, path, name)) != ERL_DE_NO_ERROR) {
 	erts_free(ERTS_ALC_T_DDLL_HANDLE, (void *) dh);

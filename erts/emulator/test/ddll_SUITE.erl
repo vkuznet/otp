@@ -44,7 +44,7 @@
 	 more_error_codes/1, forced_port_killing/1, 
 	 no_trap_exit_and_kill_ports/1,
 	 monitor_demonitor/1, monitor_demonitor_load/1, new_interface/1, 
-	 lock_driver/1]).
+	 lock_driver/1, load_with_global/1, load_without_global/1]).
 
 % Private exports
 -export([echo_loader/2, nice_echo_loader/2 ,properties/1, load_and_unload/1]).
@@ -67,7 +67,9 @@ all() ->
      reload_pending_fail_init, reload_pending_kill,
      more_error_codes, forced_port_killing,
      no_trap_exit_and_kill_ports, monitor_demonitor,
-     monitor_demonitor_load, new_interface, lock_driver].
+     monitor_demonitor_load, new_interface, lock_driver,
+     load_with_global, load_without_global
+].
 
 groups() -> 
     [].
@@ -1123,3 +1125,36 @@ unload_expect_fast(Driver,XFlags) ->
     after 1000 ->
 	    {error,{unable_to_unload, Driver}}
     end.
+
+
+-define(CTL_GLOBAL, 23).
+
+global(Config, Opts) ->
+    ?line Dog = test_server:timetrap(test_server:seconds(60)),
+    ?line Path = ?config(data_dir, Config),
+    ?line {ok, Loaded_drivers1} = erl_ddll:loaded_drivers(),
+
+    ?line {ok, loaded} = erl_ddll:try_load(Path, global_drv, [{driver_options, Opts}]),
+    ?line Port = open_port({spawn, global_drv}, [binary]),
+    ?line Ctl = port_control(Port, ?CTL_GLOBAL, [Path, "global.so", 0]),
+    ?line true = port_close(Port),
+    ?line ok = erl_ddll:unload_driver(global_drv),
+
+    ?line {ok, Loaded_drivers2} = erl_ddll:loaded_drivers(),
+    ?line Set1 = ordsets:from_list(Loaded_drivers1),
+    ?line Set2 = ordsets:from_list(Loaded_drivers2),
+    ?line io:format("~p == ~p\n", [Loaded_drivers1, Loaded_drivers2]),
+    ?line [] = ordsets:to_list(ordsets:subtract(Set2, Set1)),
+
+    ?line test_server:timetrap_cancel(Dog),
+    Ctl.
+
+load_with_global(doc) -> ["Load a driver with the global option. Loading should succeed."];
+load_with_global(Config) when is_list(Config) ->
+    ?line <<1>> = global(Config, [global]),
+    ok.
+
+load_without_global(doc) -> ["Load a driver without the global option. Loading should fail."];
+load_without_global(Config) when is_list(Config) ->
+    ?line <<2>> = global(Config, []),
+    ok.

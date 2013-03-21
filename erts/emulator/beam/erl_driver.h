@@ -87,6 +87,18 @@
 #include <stdlib.h>
 #include <sys/types.h>	/* ssize_t */
 
+#ifdef HAVE_DLFCN_H
+#include <dlfcn.h>
+#endif
+
+
+/* some systems do not have RTLD_NOW defined, and require the "mode"
+ * argument to dload() always be 1.
+ */
+#ifndef RTLD_NOW
+#  define RTLD_NOW 1
+#endif
+
 #if defined(__WIN32__) || defined(_WIN32) || defined(_WIN32_)
 #ifndef STATIC_ERLANG_DRIVER
    /* Windows dynamic drivers, everything is different... */

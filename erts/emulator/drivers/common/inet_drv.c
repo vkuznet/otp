@@ -3655,7 +3655,7 @@ static int inet_init()
     {
 	static void *h_libsctp = NULL;
 
-	if (erts_sys_ddll_open_noext(STRINGIFY(LIBSCTP), &h_libsctp, NULL)
+	if (erts_sys_ddll_open_noext(STRINGIFY(LIBSCTP), 0, &h_libsctp, NULL)
 	    == 0) {
 	    void *ptr;
 	    if (erts_sys_ddll_sym(h_libsctp, "sctp_bindx", &ptr) == 0) {

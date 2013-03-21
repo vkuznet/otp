@@ -58,7 +58,7 @@ void erl_sys_ddll_init(void) {
 /* 
  * Open a shared object
  */
-int erts_sys_ddll_open2(const char *full_name, void **handle, ErtsSysDdllError* err)
+int erts_sys_ddll_open2(const char *full_name, int flags, void **handle, ErtsSysDdllError* err)
 {
     int len;
     char dlname[MAXPATHLEN + 1];
@@ -71,9 +71,9 @@ int erts_sys_ddll_open2(const char *full_name, void **handle, ErtsSysDdllError* 
     }
     sys_strcpy(dlname, full_name);
     sys_strcpy(dlname+len, FILE_EXT);
-    return erts_sys_ddll_open_noext(dlname, handle, err);
+    return erts_sys_ddll_open_noext(dlname, 0, handle, err);
 }
-int erts_sys_ddll_open_noext(char *dlname, void **handle, ErtsSysDdllError* err)
+int erts_sys_ddll_open_noext(char *dlname, int flags, void **handle, ErtsSysDdllError* err)
 {
     HINSTANCE hinstance;
     

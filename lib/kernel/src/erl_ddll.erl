@@ -80,7 +80,7 @@ monitor(_, _) ->
               | {monitor, MonitorOption}
               | {reload, ReloadOption},
       DriverOptionList :: [DriverOption],
-      DriverOption :: kill_ports,
+      DriverOption :: kill_ports | global,
       MonitorOption :: pending_driver | pending,
       ReloadOption :: pending_driver | pending,
       Status :: loaded | already_loaded | PendingStatus,
